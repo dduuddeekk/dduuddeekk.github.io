@@ -48,7 +48,10 @@
         // --- 2. MEMBUAT POLYLINE ---
         let jalurJalan = L.polyline([
             [lat_kampus, lon_kampus], // Titik awal (Gedung TI)
-            [-8.7954, 115.1762],       // Belokan
+            [-8.796355, 115.175983],
+            [-8.796325, 115.175601],
+            [-8.795843, 115.175643],
+            [-8.795802, 115.175549],
             [lat_robert, lon_robert]  // Titik akhir (Kantin)
         ], {
             color: 'blue', // Warna garis
@@ -57,15 +60,15 @@
 
         // --- 3. MEMBUAT POLYGON ---
         let areaParkir = L.polygon([
-            [-8.7966, 115.1758],
-            [-8.7969, 115.1761],
-            [-8.7965, 115.1765],
-            [-8.7962, 115.1762]
+            [-8.796319, 115.175951],
+            [-8.796319, 115.175634],
+            [-8.795871, 115.175653],
+            [-8.795900, 115.175959]
         ], {
-            color: 'gray',
-            fillColor: '#999',
+            color: '#009999',
+            fillColor: '#00ffff',
             fillOpacity: 0.5
-        }).bindPopup("<b>Area Parkir Gedung TI</b>");
+        }).bindPopup("<b>Area Parkir Fakultas Teknik</b>");
 
         // --- PENGELOMPOKAN LAYER UNTUK KONTROL ---
         let markers = L.layerGroup([markerKampus, markerKantin, markerPerpus]);
