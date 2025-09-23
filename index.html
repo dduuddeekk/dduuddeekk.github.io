@@ -16,23 +16,19 @@
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
-        // --- 0. PENGATURAN AWAL ---
         let lat_kampus = -8.796372871214897;
         let lon_kampus = 115.17633157753492;
 
-        // Mendefinisikan Basemap
         let osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         });
         
-        // PERBAIKAN: Mengganti L.titlelayer menjadi L.tileLayer
         let satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             maxZoom: 19,
             attribution: '© Esri, DigitalGlobe, GeoEye, Earthstar Geographics'
         });
 
-        // --- 1. MENAMBAHKAN BEBERAPA MARKER ---
         let markerKampus = L.marker([lat_kampus, lon_kampus])
             .bindPopup("<b>Gedung Utama TI</b><br>Universitas Udayana");
 
@@ -40,25 +36,61 @@
         let lon_robert = 115.1759587754824;
         let markerKantin = L.marker([lat_robert, lon_robert])
             .bindPopup("<b>Warung Robert Jr (Kantin)</b><br>Tempat makan populer.");
-            
-        // PENAMBAHAN: Marker untuk Perpustakaan sesuai instruksi
         let markerPerpus = L.marker([-8.79555, 115.17725])
             .bindPopup("<b>Perpustakaan Pusat</b><br>Pusat sumber belajar mahasiswa.");
 
-        // --- 2. MEMBUAT POLYLINE ---
+        let lat_rumah = -8.671714845612447;
+        let lon_rumah = 115.19986189944949;
+        let markerRumah = L.marker([lat_rumah, lon_rumah])
+            .bindPopup("<b>Rumah Saya</b>");
+
+        let lat_kantor_desa = -8.674589192603333;
+        let lon_kantor_desa = 115.20177646316887;
+        let markerKantorDesa = L.marker([lat_kantor_desa, lon_kantor_desa])
+            .bindPopup("<b>Kantor Desa</b>");
+
+        let lat_pasar = -8.667280871480854;
+        let lon_pasar = 115.19954098004885;
+        let markerPasar = L.marker([lat_pasar, lon_pasar])
+            .bindPopup("<b>Pasar Tegal Harum</b>");
+
         let jalurJalan = L.polyline([
-            [lat_kampus, lon_kampus], // Titik awal (Gedung TI)
+            [lat_kampus, lon_kampus],
             [-8.796355, 115.175983],
             [-8.796325, 115.175601],
             [-8.795843, 115.175643],
             [-8.795802, 115.175549],
-            [lat_robert, lon_robert]  // Titik akhir (Kantin)
+            [lat_robert, lon_robert]
         ], {
-            color: 'blue', // Warna garis
-            weight: 3      // Ketebalan garis
+            color: 'blue',
+            weight: 3
         }).bindPopup("Jalur dari Gedung TI ke Kantin");
 
-        // --- 3. MEMBUAT POLYGON ---
+        let jalurKeKantorDesa = L.polyline([
+            [lat_rumah, lon_rumah],
+            [lat_kantor_desa, lon_kantor_desa]
+        ], {
+            color: 'red'
+        }).bindPopup("Jalur ke Kantor Desa");
+
+        let jalurKePasar = L.polyline([
+            [lat_rumah, lon_rumah],
+            [-8.671558, 115.198206],
+            [-8.670864, 115.198195],
+            [-8.670556, 115.198142],
+            [-8.670291, 115.198053],
+            [-8.670177, 115.198066],
+            [-8.670071, 115.198131],
+            [-8.669708, 115.198176],
+            [-8.667652, 115.198651],
+            [-8.667857, 115.199504],
+            [-8.667480, 115.199550],
+            [-8.667470, 115.199507],
+            [lat_pasar, lon_pasar]
+        ], {
+            color: 'green'
+        }).bindPopup("Jalur ke Pasar Tegal Harum");
+
         let areaParkir = L.polygon([
             [-8.796319, 115.175951],
             [-8.796319, 115.175634],
@@ -70,32 +102,46 @@
             fillOpacity: 0.5
         }).bindPopup("<b>Area Parkir Fakultas Teknik</b>");
 
-        // --- PENGELOMPOKAN LAYER UNTUK KONTROL ---
-        let markers = L.layerGroup([markerKampus, markerKantin, markerPerpus]);
+        let markers = L.layerGroup([markerKampus, markerKantin, markerPerpus, markerRumah, markerKantorDesa, markerPasar]);
 
-        // Inisialisasi Peta
+        let jalurRumah = L.layerGroup([jalurKeKantorDesa, jalurKePasar]);
+
         let map = L.map('map', {
-            center: [lat_kampus, lon_kampus],
-            zoom: 17,
-            layers: [osm, markers, jalurJalan, areaParkir] // Layer default yang tampil
+            center: [lat_rumah, lon_rumah],
+            zoom: 16,
+            layers: [osm, markers, jalurJalan, areaParkir, jalurRumah]
         });
 
-        // --- 4. LAYER CONTROL ---
         let baseMaps = {
             "OpenStreetMap": osm,
             "Satellite": satellite
         };
 
-        // PENAMBAHAN: Objek untuk overlay
         let overlayMaps = {
             "Titik Penting": markers,
-            "Jalur Jalan": jalurJalan,
-            "Area Parkir": areaParkir
+            "Jalur Jalan Kampus": jalurJalan,
+            "Area Parkir": areaParkir,
+            "Jalur dari Rumah": jalurRumah
         };
 
-        // Menambahkan kontrol layer ke peta
         L.control.layers(baseMaps, overlayMaps).addTo(map);
 
+        map.on('click', function(e) {
+            const lat = e.latlng.lat.toFixed(6);
+            const lng = e.latlng.lng.toFixed(6);
+
+            const popupContent = `<b>Koordinat Titik</b><br>Latitude: ${lat}<br>Longitude: ${lng}`;
+
+            const newMarker = L.marker(e.latlng)
+                .bindPopup(popupContent)
+                .addTo(map);
+
+            newMarker.openPopup();
+
+            newMarker.on('popupclose', function() {
+                map.removeLayer(newMarker);
+            });
+        });
     </script>
 </body>
 </html>
