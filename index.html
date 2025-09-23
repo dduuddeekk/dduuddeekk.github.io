@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peta Kampus</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 
     <style>
@@ -14,19 +16,40 @@
         }
     </style>
 </head>
+
 <body>
     <div id="map"></div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script>
         // 1. Inisialisasi Data Lokasi
+        // 1a. Data Lokasi dengan Ikon Tematik Kustom
         const locations = {
-            'rumah': { name: 'Rumah Saya', latlng: L.latLng(-8.671714, 115.199861) },
-            'kantor_desa': { name: 'Kantor Desa', latlng: L.latLng(-8.674589, 115.201776) },
-            'pasar': { name: 'Pasar Tegal Harum', latlng: L.latLng(-8.667280, 115.199540) },
-            'kampus': { name: 'Gedung Utama TI', latlng: L.latLng(-8.796372, 115.176331) },
-            'kantin': { name: 'Warung Robert Jr', latlng: L.latLng(-8.794983, 115.175958) },
-            'perpus': { name: 'Perpustakaan Jimbaran', latlng: L.latLng(-8.79887055526897, 115.17272843400745) }
+            'rumah': { name: 'Rumah Saya', latlng: L.latLng(-8.671714, 115.199861), description: 'Jl. Gn. Kalimutu XIX No.21, Pemecutan Klod, Kec. Denpasar Bar., Kota Denpasar, Bali 80113', icon: L.icon({
+                iconUrl: 'https://img.icons8.com/fluency/48/home.png',
+                iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40]
+            }) },
+            'kantor_desa': { name: 'Kantor Desa Pemecutan Kelod', latlng: L.latLng(-8.674589, 115.201776), description: 'Jl. Imam Bonjol No.180, Pemecutan Klod, Kec. Denpasar Bar., Kota Denpasar, Bali 80113', icon: L.icon({
+                iconUrl: 'https://img.icons8.com/fluency/48/city-hall.png',
+                iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40]
+            }) },
+            'pasar': { name: 'Pasar Tegal Harum', latlng: L.latLng(-8.667280, 115.199540), description: 'Jl. Gunung Rinjani No.99X, Tegal Harum, Kec. Denpasar Bar., Kota Denpasar, Bali 80112', icon: L.icon({
+                iconUrl: 'https://img.icons8.com/fluency/48/shopping-basket-2.png',
+                iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40]
+            }) },
+            'kampus': { name: 'Universitas Udayana-Teknologi Informasi', latlng: L.latLng(-8.796372, 115.176331), description: '653G+CGQ, Jl. Raya Kampus Udayana, Jimbaran, Kec. Kuta Sel., Kabupaten Badung, Bali 80361', icon: L.icon({
+                iconUrl: 'https://img.icons8.com/fluency/48/university.png',
+                iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40]
+            }) },
+            'kantin': { name: 'Warung Robert Jr', latlng: L.latLng(-8.794983, 115.175958), description: 'Jl. Raya Kampus Unud No.88 Blok r, Jimbaran, Kec. Kuta Sel., Kabupaten Badung, Bali 80361', icon: L.icon({
+                iconUrl: 'https://img.icons8.com/fluency/48/restaurant.png',
+                iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40]
+            }) },
+            'perpus': { name: 'Perpustakaan Jimbaran', latlng: L.latLng(-8.79887055526897, 115.17272843400745), description: '652F+95R Kampus Bukit, Jimbaran, Kec. Kuta Sel., Kabupaten Badung, Bali 80361', icon: L.icon({
+                iconUrl: 'https://img.icons8.com/fluency/48/books.png',
+                iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40]
+            }) }
         };
 
         // 2. Definisi Layer Peta Dasar (Basemap)
@@ -34,7 +57,7 @@
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         });
-        
+
         let satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             maxZoom: 19,
             attribution: '© Esri, DigitalGlobe, GeoEye, Earthstar Geographics'
@@ -42,7 +65,7 @@
 
         // 3. Membuat Marker Secara Dinamis dari Objek 'locations'
         const locationMarkers = Object.values(locations).map(loc => {
-            return L.marker(loc.latlng).bindPopup(`<b>${loc.name}</b>`);
+            return L.marker(loc.latlng, { icon: loc.icon }).bindPopup(`<b>${loc.name}</b><br>${loc.description}`);
         });
 
         // 4. Membuat Layer Polygon untuk Area Tertentu
@@ -85,7 +108,7 @@
         // 7. Membuat Kontrol Kustom untuk Pemilihan Rute
         const routingControlUI = L.control({ position: 'topleft' });
 
-        routingControlUI.onAdd = function(map) {
+        routingControlUI.onAdd = function (map) {
             const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
             container.style.backgroundColor = 'white';
             container.style.padding = '10px';
@@ -113,7 +136,7 @@
         routingControlUI.addTo(map);
 
         // 8. Event Listener untuk Menampilkan Koordinat saat Peta Diklik
-        map.on('click', function(e) {
+        map.on('click', function (e) {
             const lat = e.latlng.lat.toFixed(6);
             const lng = e.latlng.lng.toFixed(6);
 
@@ -126,7 +149,7 @@
             newMarker.openPopup();
 
             // Menghapus marker saat popup-nya ditutup
-            newMarker.on('popupclose', function() {
+            newMarker.on('popupclose', function () {
                 map.removeLayer(newMarker);
             });
         });
@@ -165,7 +188,7 @@
         }
 
         // Event listener untuk tombol "Cari Rute"
-        calculateBtn.addEventListener('click', function() {
+        calculateBtn.addEventListener('click', function () {
             const startKey = startSelect.value;
             const endKey = endSelect.value;
 
@@ -190,13 +213,17 @@
                     locations[endKey].latlng
                 ],
                 routeWhileDragging: true,
-                // Opsi untuk menyembunyikan panel teks instruksi rute
-                show: false
+                show: false,
+                lineOptions: {
+                    styles: [
+                        { color: '#009999', opacity: 0.75, weight: 8 }
+                    ]
+                }
             }).addTo(map);
         });
 
         // Event listener untuk tombol "Reset"
-        resetBtn.addEventListener('click', function() {
+        resetBtn.addEventListener('click', function () {
             if (currentRoute) {
                 map.removeControl(currentRoute);
                 currentRoute = null;
@@ -206,4 +233,5 @@
         });
     </script>
 </body>
+
 </html>
