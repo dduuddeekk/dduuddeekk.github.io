@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peta Kampus</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+
     <style>
         #map {
             height: 100vh;
@@ -15,10 +17,19 @@
 <body>
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script>
-        let lat_kampus = -8.796372871214897;
-        let lon_kampus = 115.17633157753492;
+        // 1. Inisialisasi Data Lokasi
+        const locations = {
+            'rumah': { name: 'Rumah Saya', latlng: L.latLng(-8.671714, 115.199861) },
+            'kantor_desa': { name: 'Kantor Desa', latlng: L.latLng(-8.674589, 115.201776) },
+            'pasar': { name: 'Pasar Tegal Harum', latlng: L.latLng(-8.667280, 115.199540) },
+            'kampus': { name: 'Gedung Utama TI', latlng: L.latLng(-8.796372, 115.176331) },
+            'kantin': { name: 'Warung Robert Jr', latlng: L.latLng(-8.794983, 115.175958) },
+            'perpus': { name: 'Perpustakaan Jimbaran', latlng: L.latLng(-8.79887055526897, 115.17272843400745) }
+        };
 
+        // 2. Definisi Layer Peta Dasar (Basemap)
         let osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
@@ -29,68 +40,12 @@
             attribution: '© Esri, DigitalGlobe, GeoEye, Earthstar Geographics'
         });
 
-        let markerKampus = L.marker([lat_kampus, lon_kampus])
-            .bindPopup("<b>Gedung Utama TI</b><br>Universitas Udayana");
+        // 3. Membuat Marker Secara Dinamis dari Objek 'locations'
+        const locationMarkers = Object.values(locations).map(loc => {
+            return L.marker(loc.latlng).bindPopup(`<b>${loc.name}</b>`);
+        });
 
-        let lat_robert = -8.794983505989313;
-        let lon_robert = 115.1759587754824;
-        let markerKantin = L.marker([lat_robert, lon_robert])
-            .bindPopup("<b>Warung Robert Jr (Kantin)</b><br>Tempat makan populer.");
-        let markerPerpus = L.marker([-8.79555, 115.17725])
-            .bindPopup("<b>Perpustakaan Pusat</b><br>Pusat sumber belajar mahasiswa.");
-
-        let lat_rumah = -8.671714845612447;
-        let lon_rumah = 115.19986189944949;
-        let markerRumah = L.marker([lat_rumah, lon_rumah])
-            .bindPopup("<b>Rumah Saya</b>");
-
-        let lat_kantor_desa = -8.674589192603333;
-        let lon_kantor_desa = 115.20177646316887;
-        let markerKantorDesa = L.marker([lat_kantor_desa, lon_kantor_desa])
-            .bindPopup("<b>Kantor Desa</b>");
-
-        let lat_pasar = -8.667280871480854;
-        let lon_pasar = 115.19954098004885;
-        let markerPasar = L.marker([lat_pasar, lon_pasar])
-            .bindPopup("<b>Pasar Tegal Harum</b>");
-
-        let jalurJalan = L.polyline([
-            [lat_kampus, lon_kampus],
-            [-8.796355, 115.175983],
-            [-8.796325, 115.175601],
-            [-8.795843, 115.175643],
-            [-8.795802, 115.175549],
-            [lat_robert, lon_robert]
-        ], {
-            color: 'blue',
-            weight: 3
-        }).bindPopup("Jalur dari Gedung TI ke Kantin");
-
-        let jalurKeKantorDesa = L.polyline([
-            [lat_rumah, lon_rumah],
-            [lat_kantor_desa, lon_kantor_desa]
-        ], {
-            color: 'red'
-        }).bindPopup("Jalur ke Kantor Desa");
-
-        let jalurKePasar = L.polyline([
-            [lat_rumah, lon_rumah],
-            [-8.671558, 115.198206],
-            [-8.670864, 115.198195],
-            [-8.670556, 115.198142],
-            [-8.670291, 115.198053],
-            [-8.670177, 115.198066],
-            [-8.670071, 115.198131],
-            [-8.669708, 115.198176],
-            [-8.667652, 115.198651],
-            [-8.667857, 115.199504],
-            [-8.667480, 115.199550],
-            [-8.667470, 115.199507],
-            [lat_pasar, lon_pasar]
-        ], {
-            color: 'green'
-        }).bindPopup("Jalur ke Pasar Tegal Harum");
-
+        // 4. Membuat Layer Polygon untuk Area Tertentu
         let areaParkir = L.polygon([
             [-8.796319, 115.175951],
             [-8.796319, 115.175634],
@@ -102,30 +57,62 @@
             fillOpacity: 0.5
         }).bindPopup("<b>Area Parkir Fakultas Teknik</b>");
 
-        let markers = L.layerGroup([markerKampus, markerKantin, markerPerpus, markerRumah, markerKantorDesa, markerPasar]);
+        // 5. Mengelompokkan Layer untuk Kontrol
+        let markers = L.layerGroup(locationMarkers);
 
-        let jalurRumah = L.layerGroup([jalurKeKantorDesa, jalurKePasar]);
-
+        // 6. Inisialisasi Peta Utama
         let map = L.map('map', {
-            center: [lat_rumah, lon_rumah],
+            center: locations.rumah.latlng,
             zoom: 16,
-            layers: [osm, markers, jalurJalan, areaParkir, jalurRumah]
+            layers: [osm, markers, areaParkir]
         });
 
+        // Objek untuk menampung basemap yang akan ditampilkan di kontrol layer
         let baseMaps = {
             "OpenStreetMap": osm,
             "Satellite": satellite
         };
 
+        // Objek untuk menampung overlay (marker, polygon) yang akan ditampilkan di kontrol layer
         let overlayMaps = {
             "Titik Penting": markers,
-            "Jalur Jalan Kampus": jalurJalan,
-            "Area Parkir": areaParkir,
-            "Jalur dari Rumah": jalurRumah
+            "Area Parkir": areaParkir
         };
 
+        // Menambahkan kontrol layer ke peta
         L.control.layers(baseMaps, overlayMaps).addTo(map);
 
+        // 7. Membuat Kontrol Kustom untuk Pemilihan Rute
+        const routingControlUI = L.control({ position: 'topleft' });
+
+        routingControlUI.onAdd = function(map) {
+            const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+            container.style.backgroundColor = 'white';
+            container.style.padding = '10px';
+            container.style.borderRadius = '5px';
+            container.style.fontFamily = 'sans-serif';
+            container.style.width = '200px';
+
+            // Mencegah event klik di dalam kontrol menyebar ke peta
+            L.DomEvent.disableClickPropagation(container);
+
+            container.innerHTML = `
+                <label for="start-location">Lokasi Awal:</label>
+                <select id="start-location" style="width: 100%; margin-top: 5px;"></select>
+                <br><br>
+                <label for="end-location">Lokasi Akhir:</label>
+                <select id="end-location" style="width: 100%; margin-top: 5px;"></select>
+                <br><br>
+                <div style="display: flex; justify-content: space-between;">
+                    <button id="calculate-route" style="width: 48%;">Cari Rute</button>
+                    <button id="reset-route" style="width: 48%;">Reset</button>
+                </div>
+            `;
+            return container;
+        };
+        routingControlUI.addTo(map);
+
+        // 8. Event Listener untuk Menampilkan Koordinat saat Peta Diklik
         map.on('click', function(e) {
             const lat = e.latlng.lat.toFixed(6);
             const lng = e.latlng.lng.toFixed(6);
@@ -138,9 +125,84 @@
 
             newMarker.openPopup();
 
+            // Menghapus marker saat popup-nya ditutup
             newMarker.on('popupclose', function() {
                 map.removeLayer(newMarker);
             });
+        });
+
+        // 9. Logika untuk Mengelola Pemilihan Rute
+        const startSelect = document.getElementById('start-location');
+        const endSelect = document.getElementById('end-location');
+        const calculateBtn = document.getElementById('calculate-route');
+        const resetBtn = document.getElementById('reset-route');
+        let currentRoute = null;
+
+        // Fungsi utilitas untuk menambahkan opsi placeholder "-- Pilih Lokasi --" ke elemen select.
+        function addDefaultOption(selectElement) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = "-- Pilih Lokasi --";
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            selectElement.appendChild(defaultOption);
+        }
+
+        addDefaultOption(startSelect);
+        addDefaultOption(endSelect);
+
+        // Mengisi kedua dropdown (lokasi awal dan akhir) dengan data dari objek 'locations'.
+        for (const key in locations) {
+            const option1 = document.createElement('option');
+            option1.value = key;
+            option1.textContent = locations[key].name;
+            startSelect.appendChild(option1);
+
+            const option2 = document.createElement('option');
+            option2.value = key;
+            option2.textContent = locations[key].name;
+            endSelect.appendChild(option2);
+        }
+
+        // Event listener untuk tombol "Cari Rute"
+        calculateBtn.addEventListener('click', function() {
+            const startKey = startSelect.value;
+            const endKey = endSelect.value;
+
+            // Validasi input: memastikan kedua lokasi telah dipilih dan tidak sama
+            if (!startKey || !endKey) {
+                alert("Silakan pilih lokasi awal dan akhir terlebih dahulu.");
+                return;
+            }
+            if (startKey === endKey) {
+                alert("Lokasi awal dan akhir tidak boleh sama.");
+                return;
+            }
+
+            // Menghapus rute sebelumnya jika ada
+            if (currentRoute) {
+                map.removeControl(currentRoute);
+            }
+
+            currentRoute = L.Routing.control({
+                waypoints: [
+                    locations[startKey].latlng,
+                    locations[endKey].latlng
+                ],
+                routeWhileDragging: true,
+                // Opsi untuk menyembunyikan panel teks instruksi rute
+                show: false
+            }).addTo(map);
+        });
+
+        // Event listener untuk tombol "Reset"
+        resetBtn.addEventListener('click', function() {
+            if (currentRoute) {
+                map.removeControl(currentRoute);
+                currentRoute = null;
+            }
+            startSelect.value = "";
+            endSelect.value = "";
         });
     </script>
 </body>
