@@ -24,7 +24,6 @@
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script>
         // 1. Inisialisasi Data Lokasi
-        // 1a. Data Lokasi dengan Ikon Tematik Kustom
         const locations = {
             'rumah': { name: 'Rumah Saya', latlng: L.latLng(-8.671714, 115.199861), description: 'Jl. Gn. Kalimutu XIX No.21, Pemecutan Klod, Kec. Denpasar Bar., Kota Denpasar, Bali 80113', icon: L.icon({
                 iconUrl: 'https://img.icons8.com/fluency/48/home.png',
@@ -213,6 +212,7 @@
                     locations[endKey].latlng
                 ],
                 routeWhileDragging: true,
+                createMarker: function() { return null; },
                 show: false,
                 lineOptions: {
                     styles: [
