@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peta Kampus</title>
+    <title>Peta Interaktif Bali</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
@@ -81,32 +81,34 @@
 
         // 5. Mengelompokkan Layer untuk Kontrol
         let markers = L.layerGroup(locationMarkers);
+        
+        // Deklarasi variabel untuk layer GeoJSON di luar fetch
+        let batasAdministratifLayer = L.layerGroup();
 
         // 6. Inisialisasi Peta Utama
         let map = L.map('map', {
-            center: locations.rumah.latlng,
-            zoom: 16,
-            layers: [osm, markers, areaParkir]
+            center: [-8.409518, 115.188919],
+            zoom: 10,
+            layers: [osm, markers, areaParkir, batasAdministratifLayer]
         });
 
-        // Objek untuk menampung basemap yang akan ditampilkan di kontrol layer
+        // 7. Objek untuk Kontrol Layer
         let baseMaps = {
             "OpenStreetMap": osm,
             "Satellite": satellite
         };
 
-        // Objek untuk menampung overlay (marker, polygon) yang akan ditampilkan di kontrol layer
         let overlayMaps = {
             "Titik Penting": markers,
-            "Area Parkir": areaParkir
+            "Area Parkir": areaParkir,
+            "Batas Administratif": batasAdministratifLayer
         };
 
-        // Menambahkan kontrol layer ke peta
+        // 8. Menambahkan Kontrol Layer ke Peta
         L.control.layers(baseMaps, overlayMaps).addTo(map);
 
-        // 7. Membuat Kontrol Kustom untuk Pemilihan Rute
+        // 9. Membuat Kontrol Kustom untuk Pemilihan Rute
         const routingControlUI = L.control({ position: 'topleft' });
-
         routingControlUI.onAdd = function (map) {
             const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
             container.style.backgroundColor = 'white';
@@ -114,10 +116,7 @@
             container.style.borderRadius = '5px';
             container.style.fontFamily = 'sans-serif';
             container.style.width = '200px';
-
-            // Mencegah event klik di dalam kontrol menyebar ke peta
             L.DomEvent.disableClickPropagation(container);
-
             container.innerHTML = `
                 <label for="start-location">Lokasi Awal:</label>
                 <select id="start-location" style="width: 100%; margin-top: 5px;"></select>
@@ -134,102 +133,91 @@
         };
         routingControlUI.addTo(map);
 
-        // 8. Event Listener untuk Menampilkan Koordinat saat Peta Diklik
+        // 10. Load and Display GeoJSON Data for Administrative Boundaries
+        // Helper function to generate a random color
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        fetch('kelurahan.geojson')
+            .then(response => response.json())
+            .then(data => {
+                L.geoJSON(data, {
+                    style: function (feature) {
+                        return {
+                            color: 'blue',       
+                            weight: 1,         
+                            fillColor: getRandomColor(), 
+                            fillOpacity: 0.6    
+                        };
+                    },
+                    onEachFeature: function (feature, layer) {
+                        if (feature.properties && feature.properties.nm_kelurahan) {
+                            layer.bindPopup(`<b>Kelurahan:</b><br>${feature.properties.nm_kelurahan}`);
+                        }
+                    }
+                }).addTo(batasAdministratifLayer);
+            })
+            .catch(error => console.error('Error loading GeoJSON:', error));
+
+
+        // 11. Event Listener untuk Koordinat Klik
         map.on('click', function (e) {
             const lat = e.latlng.lat.toFixed(6);
             const lng = e.latlng.lng.toFixed(6);
-
             const popupContent = `<b>Koordinat Titik</b><br>Latitude: ${lat}<br>Longitude: ${lng}`;
-
-            const newMarker = L.marker(e.latlng)
-                .bindPopup(popupContent)
-                .addTo(map);
-
+            const newMarker = L.marker(e.latlng).bindPopup(popupContent).addTo(map);
             newMarker.openPopup();
-
-            // Menghapus marker saat popup-nya ditutup
-            newMarker.on('popupclose', function () {
-                map.removeLayer(newMarker);
-            });
+            newMarker.on('popupclose', function () { map.removeLayer(newMarker); });
         });
 
-        // 9. Logika untuk Mengelola Pemilihan Rute
+        // 12. Logika Rute
         const startSelect = document.getElementById('start-location');
         const endSelect = document.getElementById('end-location');
         const calculateBtn = document.getElementById('calculate-route');
         const resetBtn = document.getElementById('reset-route');
         let currentRoute = null;
 
-        // Fungsi utilitas untuk menambahkan opsi placeholder "-- Pilih Lokasi --" ke elemen select.
         function addDefaultOption(selectElement) {
             const defaultOption = document.createElement('option');
-            defaultOption.value = "";
-            defaultOption.textContent = "-- Pilih Lokasi --";
-            defaultOption.disabled = true;
-            defaultOption.selected = true;
+            defaultOption.value = ""; defaultOption.textContent = "-- Pilih Lokasi --";
+            defaultOption.disabled = true; defaultOption.selected = true;
             selectElement.appendChild(defaultOption);
         }
 
         addDefaultOption(startSelect);
         addDefaultOption(endSelect);
 
-        // Mengisi kedua dropdown (lokasi awal dan akhir) dengan data dari objek 'locations'.
         for (const key in locations) {
             const option1 = document.createElement('option');
-            option1.value = key;
-            option1.textContent = locations[key].name;
+            option1.value = key; option1.textContent = locations[key].name;
             startSelect.appendChild(option1);
-
             const option2 = document.createElement('option');
-            option2.value = key;
-            option2.textContent = locations[key].name;
+            option2.value = key; option2.textContent = locations[key].name;
             endSelect.appendChild(option2);
         }
 
-        // Event listener untuk tombol "Cari Rute"
         calculateBtn.addEventListener('click', function () {
             const startKey = startSelect.value;
             const endKey = endSelect.value;
-
-            // Validasi input: memastikan kedua lokasi telah dipilih dan tidak sama
-            if (!startKey || !endKey) {
-                alert("Silakan pilih lokasi awal dan akhir terlebih dahulu.");
-                return;
-            }
-            if (startKey === endKey) {
-                alert("Lokasi awal dan akhir tidak boleh sama.");
-                return;
-            }
-
-            // Menghapus rute sebelumnya jika ada
-            if (currentRoute) {
-                map.removeControl(currentRoute);
-            }
-
+            if (!startKey || !endKey) { alert("Silakan pilih lokasi awal dan akhir."); return; }
+            if (startKey === endKey) { alert("Lokasi awal dan akhir tidak boleh sama."); return; }
+            if (currentRoute) { map.removeControl(currentRoute); }
             currentRoute = L.Routing.control({
-                waypoints: [
-                    locations[startKey].latlng,
-                    locations[endKey].latlng
-                ],
-                routeWhileDragging: true,
-                createMarker: function() { return null; },
-                show: false,
-                lineOptions: {
-                    styles: [
-                        { color: '#009999', opacity: 0.75, weight: 8 }
-                    ]
-                }
+                waypoints: [locations[startKey].latlng, locations[endKey].latlng],
+                routeWhileDragging: true, createMarker: function() { return null; },
+                show: false, lineOptions: { styles: [{ color: '#009999', opacity: 0.75, weight: 8 }] }
             }).addTo(map);
         });
 
-        // Event listener untuk tombol "Reset"
         resetBtn.addEventListener('click', function () {
-            if (currentRoute) {
-                map.removeControl(currentRoute);
-                currentRoute = null;
-            }
-            startSelect.value = "";
-            endSelect.value = "";
+            if (currentRoute) { map.removeControl(currentRoute); currentRoute = null; }
+            startSelect.value = ""; endSelect.value = "";
         });
     </script>
 </body>
