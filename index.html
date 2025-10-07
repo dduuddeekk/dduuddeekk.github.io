@@ -23,7 +23,7 @@
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script>
-        // 1. Inisialisasi Data Lokasi
+        // 1. Inisialisasi Data Lokasi Penting
         const locations = {
             'rumah': { name: 'Rumah Saya', latlng: L.latLng(-8.671714, 115.199861), description: 'Jl. Gn. Kalimutu XIX No.21, Pemecutan Klod, Kec. Denpasar Bar., Kota Denpasar, Bali 80113', icon: L.icon({
                 iconUrl: 'https://img.icons8.com/fluency/48/home.png',
@@ -51,7 +51,7 @@
             }) }
         };
 
-        // 2. Definisi Layer Peta Dasar (Basemap)
+        // 2. Definisi Layer Peta Dasar (Basemap) dari OpenStreetMap dan Esri Satellite
         let osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
@@ -62,12 +62,12 @@
             attribution: '© Esri, DigitalGlobe, GeoEye, Earthstar Geographics'
         });
 
-        // 3. Membuat Marker Secara Dinamis dari Objek 'locations'
+        // 3. Membuat Marker untuk setiap lokasi penting dan menyatukannya dalam satu grup
         const locationMarkers = Object.values(locations).map(loc => {
             return L.marker(loc.latlng, { icon: loc.icon }).bindPopup(`<b>${loc.name}</b><br>${loc.description}`);
         });
 
-        // 4. Membuat Layer Polygon untuk Area Tertentu
+        // 4. Membuat Layer Polygon untuk menandai area parkir
         let areaParkir = L.polygon([
             [-8.796319, 115.175951],
             [-8.796319, 115.175634],
@@ -79,20 +79,20 @@
             fillOpacity: 0.5
         }).bindPopup("<b>Area Parkir Fakultas Teknik</b>");
 
-        // 5. Mengelompokkan Layer untuk Kontrol
+        // 5. Mengelompokkan layer marker dan GeoJSON untuk kontrol layer
         let markers = L.layerGroup(locationMarkers);
         
-        // Deklarasi variabel untuk layer GeoJSON di luar fetch
-        let batasAdministratifLayer = L.layerGroup();
+        let batasKelurahanLayer = L.layerGroup();
+        let batasKecamatanLayer = L.layerGroup();
 
-        // 6. Inisialisasi Peta Utama
+        // 6. Inisialisasi Peta Utama dengan view awal, zoom, dan layer default
         let map = L.map('map', {
             center: [-8.409518, 115.188919],
             zoom: 10,
-            layers: [osm, markers, areaParkir, batasAdministratifLayer]
+            layers: [osm, markers, areaParkir]
         });
 
-        // 7. Objek untuk Kontrol Layer
+        // 7. Mendefinisikan objek untuk peta dasar dan overlay yang akan muncul di kontrol layer
         let baseMaps = {
             "OpenStreetMap": osm,
             "Satellite": satellite
@@ -101,13 +101,14 @@
         let overlayMaps = {
             "Titik Penting": markers,
             "Area Parkir": areaParkir,
-            "Batas Administratif": batasAdministratifLayer
+            "Batas Kelurahan": batasKelurahanLayer,
+            "Batas Kecamatan": batasKecamatanLayer
         };
 
-        // 8. Menambahkan Kontrol Layer ke Peta
+        // 8. Menambahkan kontrol layer ke dalam peta
         L.control.layers(baseMaps, overlayMaps).addTo(map);
 
-        // 9. Membuat Kontrol Kustom untuk Pemilihan Rute
+        // 9. Membuat dan menambahkan kontrol kustom untuk pemilihan rute
         const routingControlUI = L.control({ position: 'topleft' });
         routingControlUI.onAdd = function (map) {
             const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
@@ -133,8 +134,25 @@
         };
         routingControlUI.addTo(map);
 
-        // 10. Load and Display GeoJSON Data for Administrative Boundaries
-        // Helper function to generate a random color
+        // 10. Memuat dan Menampilkan Data GeoJSON untuk Batas Administratif
+        // Pemetaan kode kecamatan ke nama kecamatan
+        const namaKecamatan = {
+            '001': 'Denpasar Selatan',
+            '002': 'Denpasar Timur',
+            '003': 'Denpasar Barat',
+            '004': 'Denpasar Utara'
+        };
+
+        const kecamatanColors = {};
+        function getColorForKecamatan(kecamatanId) {
+            if (!kecamatanColors[kecamatanId]) {
+                kecamatanColors[kecamatanId] = getRandomColor();
+            }
+            return kecamatanColors[kecamatanId];
+        }
+
+
+        // Fungsi bantuan untuk menghasilkan warna acak
         function getRandomColor() {
             const letters = '0123456789ABCDEF';
             let color = '#';
@@ -146,27 +164,61 @@
 
         fetch('kelurahan.geojson')
             .then(response => response.json())
-            .then(data => {
-                L.geoJSON(data, {
+            .then(geojson => {
+                // Membuat layer untuk batas kelurahan dengan warna acak
+                L.geoJSON(geojson, {
                     style: function (feature) {
                         return {
-                            color: 'blue',       
+                            color: 'black',       
                             weight: 1,         
                             fillColor: getRandomColor(), 
                             fillOpacity: 0.6    
                         };
                     },
                     onEachFeature: function (feature, layer) {
-                        if (feature.properties && feature.properties.nm_kelurahan) {
-                            layer.bindPopup(`<b>Kelurahan:</b><br>${feature.properties.nm_kelurahan}`);
+                        if (feature.properties) {
+                            const props = feature.properties;
+                            let popupContent = '<b>Detail Wilayah:</b><br>';                            
+                            if (props.kd_kecamatan && namaKecamatan[props.kd_kecamatan]) {
+                                popupContent += `Kecamatan: ${namaKecamatan[props.kd_kecamatan]}<br>`;
+                            }
+                            if (props.nm_kelurahan) {
+                                popupContent += `Kelurahan: ${props.nm_kelurahan}<br>`;
+                            }
+                            layer.bindPopup(popupContent);
                         }
                     }
-                }).addTo(batasAdministratifLayer);
+                }).addTo(batasKelurahanLayer);
+
+                // Membuat layer untuk batas kecamatan, diwarnai berdasarkan kode kecamatan
+                L.geoJSON(geojson, {
+                    style: function (feature) {
+                        return {
+                            color: 'white',
+                            weight: 1,
+                            fillColor: getColorForKecamatan(feature.properties.kd_kecamatan),
+                            fillOpacity: 0.7
+                        };
+                    },
+                    onEachFeature: function (feature, layer) {
+                        if (feature.properties) {
+                            const props = feature.properties;
+                            let popupContent = '<b>Detail Wilayah:</b><br>';                            
+                            if (props.kd_kecamatan && namaKecamatan[props.kd_kecamatan]) {
+                                popupContent += `Kecamatan: ${namaKecamatan[props.kd_kecamatan]}<br>`;
+                            }
+                            if (props.nm_kelurahan) {
+                                popupContent += `Kelurahan: ${props.nm_kelurahan}<br>`;
+                            }
+                            layer.bindPopup(popupContent);
+                        }
+                    }
+                }).addTo(batasKecamatanLayer);
             })
             .catch(error => console.error('Error loading GeoJSON:', error));
 
 
-        // 11. Event Listener untuk Koordinat Klik
+        // 11. Event Listener untuk menampilkan popup koordinat saat peta diklik
         map.on('click', function (e) {
             const lat = e.latlng.lat.toFixed(6);
             const lng = e.latlng.lng.toFixed(6);
@@ -176,7 +228,7 @@
             newMarker.on('popupclose', function () { map.removeLayer(newMarker); });
         });
 
-        // 12. Logika Rute
+        // 12. Logika untuk fungsionalitas pencarian rute
         const startSelect = document.getElementById('start-location');
         const endSelect = document.getElementById('end-location');
         const calculateBtn = document.getElementById('calculate-route');
